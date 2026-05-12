@@ -316,6 +316,10 @@ if uploaded:
         total        = len(df_orig)
         all_kurslar  = []
         cookie_dead  = False
+        # ✅ Loop DAN OLDIN yaratiladi
+        result_df = df_orig.copy()
+        result_df["Email"] = ""
+        result_df["Holat"] = ""
 
         for i, row in df_orig.iterrows():
             pinfl = str(row[pinfl_col])
@@ -344,10 +348,6 @@ if uploaded:
         progress_bar.progress(1.0)
 
         # ── Dinamik ustunlar qo'shish ──
-        result_df = df_orig.copy()
-        result_df["Email"] = ""
-        result_df["Holat"] = ""
-
         MAX_KURS = 10  # Har doim 10 ta kurs uchun ustun ochiladi
 
         for idx, kurslar in enumerate(all_kurslar):
