@@ -335,6 +335,8 @@ if uploaded:
                 break
 
             all_kurslar.append(res["kurslar"])
+            result_df.at[i, "Email"] = res["email"]
+            result_df.at[i, "Holat"] = res["holat"]
             time.sleep(DELAY_SEC)
 
         if not cookie_dead:
@@ -343,11 +345,13 @@ if uploaded:
 
         # ── Dinamik ustunlar qo'shish ──
         result_df = df_orig.copy()
+        result_df["Email"] = ""
+        result_df["Holat"] = ""
 
-        max_kurs = max((len(k) for k in all_kurslar), default=0)
+        MAX_KURS = 10  # Har doim 10 ta kurs uchun ustun ochiladi
 
         for idx, kurslar in enumerate(all_kurslar):
-            for n in range(max_kurs):
+            for n in range(MAX_KURS):
                 if n < len(kurslar):
                     result_df.at[idx, f"Kurs {n+1} nomi"] = kurslar[n]["nomi"]
                     result_df.at[idx, f"Kurs {n+1} URL"]  = kurslar[n]["url"]
