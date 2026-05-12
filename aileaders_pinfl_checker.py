@@ -136,31 +136,29 @@ def check_pinfl(pinfl: str, session: requests.Session) -> dict:
             all_courses = data.get("courses", [])
             completed   = [c for c in all_courses if c.get("isCompleted")]
 
+            import datetime as _dt
             kurslar = []
             for c in completed:
-                url = (
-                    c.get("certificateUrl") or c.get("certificate_url") or
-                    c.get("certificateLink") or c.get("url") or ""
-                )
-                raw_date = (
-                    c.get("completedAt") or c.get("completed_at") or
-                    c.get("finishedAt")  or c.get("date") or ""
-                )
-                m = re.search(r"(20\d{2}-\d{2}-\d{2}|20\d{2})", str(raw_date))
-                vaqt = m.group(1) if m else str(raw_date)
+                url = c.get("contentCertificateUrl") or ""
+
+                raw_ts = c.get("completedAt") or ""
+                if str(raw_ts).isdigit() and int(raw_ts) > 1_000_000_000:
+                    ts = int(raw_ts)
+                    if ts > 1e10:
+                        ts = ts / 1000
+                    vaqt = _dt.datetime.fromtimestamp(ts).strftime("%d.%m.%Y")
+                else:
+                    vaqt = str(raw_ts)
 
                 kurslar.append({
-                    "nomi": (
-                        c.get("name") or c.get("title") or
-                        c.get("courseName") or c.get("course_name") or ""
-                    ),
+                    "nomi": c.get("contentName", "").strip(),
                     "url":  url,
                     "vaqt": vaqt,
                 })
 
             has_courses = data.get("hasCourses", False)
             return {
-                "holat":   "✅ Sertifikat bor" if has_courses else "⚠️ Ro'yxatda bor, kurs yo'q",
+                "holat":   "✅ Sertifikat bor" if kurslar else ("⚠️ Ro'yxatda bor, kurs yo'q" if has_courses else "⚠️ Kurs bor, sertifikat yo'q"),
                 "ism":     data.get("fullName", ""),
                 "email":   data.get("email", ""),
                 "kurslar": kurslar,
