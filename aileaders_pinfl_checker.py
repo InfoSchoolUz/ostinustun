@@ -348,6 +348,7 @@ if uploaded:
         progress_bar.progress(1.0)
 
         # ── Dinamik ustunlar qo'shish ──
+        max_kurs = max((len(k) for k in all_kurslar), default=0)
         MAX_KURS = 10  # Har doim 10 ta kurs uchun ustun ochiladi
 
         for idx, kurslar in enumerate(all_kurslar):
