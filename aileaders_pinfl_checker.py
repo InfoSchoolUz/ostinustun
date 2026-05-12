@@ -25,25 +25,41 @@ DELAY_SEC  = 1.5   # rate limit uchun
 # cURL DAN COOKIE AJRATISH
 # ──────────────────────────────────────────
 def parse_curl(curl_text: str) -> dict:
-    result = {"cookie": "", "user_agent": ""}
+    result = {
+        "cookie": "", "user_agent": "",
+        "accept": "*/*", "accept_language": "",
+        "referer": "", "extra_headers": {}
+    }
+
+    # Cookie — -b '...' yoki -H 'cookie: ...'
     for pattern in [
-        r"-b\s+'([^']+)'",
-        r'-b\s+"([^"]+)"',
-        r"-H\s+'cookie:\s*([^']+)'",
-        r'-H\s+"cookie:\s*([^"]+)"',
+        r"-b\s+'([^']+)'", r'-b\s+"([^"]+)"',
+        r"-H\s+'cookie:\s*([^']+)'", r'-H\s+"cookie:\s*([^"]+)"',
     ]:
         m = re.search(pattern, curl_text, re.IGNORECASE)
         if m:
             result["cookie"] = m.group(1).strip()
             break
-    for pattern in [
-        r"-H\s+'user-agent:\s*([^']+)'",
-        r'-H\s+"user-agent:\s*([^"]+)"',
-    ]:
-        m = re.search(pattern, curl_text, re.IGNORECASE)
-        if m:
-            result["user_agent"] = m.group(1).strip()
-            break
+
+    # Barcha -H headerlarini olish
+    for m in re.finditer(r"-H\s+'([^']+)'|-H\s+\"([^\"]+)\"", curl_text):
+        raw = (m.group(1) or m.group(2)).strip()
+        if ":" not in raw:
+            continue
+        key, _, val = raw.partition(":")
+        key = key.strip().lower()
+        val = val.strip()
+        if key == "user-agent":
+            result["user_agent"] = val
+        elif key == "accept" and "language" not in key:
+            result["accept"] = val
+        elif key == "accept-language":
+            result["accept_language"] = val
+        elif key == "referer":
+            result["referer"] = val
+        elif key not in ("cookie", "content-length"):
+            result["extra_headers"][key] = val
+
     return result
 
 # ──────────────────────────────────────────
@@ -285,14 +301,16 @@ if uploaded:
 
         session = requests.Session()
         session.headers.update({
-            "User-Agent": parsed.get("user_agent") or (
+            "User-Agent":      parsed.get("user_agent") or (
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
                 "AppleWebKit/537.36 (KHTML, like Gecko) "
-                "Chrome/124.0.0.0 Safari/537.36"
+                "Chrome/148.0.0.0 Safari/537.36"
             ),
-            "Accept":  "*/*",
-            "Referer": "https://aileaders.uz/auth/login/check",
-            "Cookie":  parsed["cookie"],
+            "Accept":          parsed.get("accept", "*/*"),
+            "Accept-Language": parsed.get("accept_language", "ru,en-US;q=0.9,en;q=0.8"),
+            "Referer":         parsed.get("referer", "https://aileaders.uz/auth/login/check"),
+            "Cookie":          parsed["cookie"],
+            **parsed.get("extra_headers", {}),
         })
 
         progress_bar = st.progress(0)
